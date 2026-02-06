@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
 
   // 2. Autenticado → fuera de /login
   if (isLoggedIn && isOnLogin) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/cursos", request.url));
   }
 
   // 3. Permisos por rol
