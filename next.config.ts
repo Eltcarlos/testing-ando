@@ -1,8 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone", // Required for Amplify deployment
-
   // Set correct workspace root to prevent tracing parent directories
   outputFileTracingRoot: __dirname,
 
