@@ -15,7 +15,7 @@ const rolePermissions: Record<string, string[]> = {
   "/api/admin/onboarding-questions": ["admin"],
 };
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const token = await getToken({
     req: request as any,
     secret: process.env.AUTH_SECRET,
