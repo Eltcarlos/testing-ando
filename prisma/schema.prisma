@@ -1,0 +1,422 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum QuestionType {
+  short_text
+  long_text
+  number
+  email
+  phone
+  single_select
+  multi_select
+  radio
+  checkbox
+  date
+  file
+  scale
+  dropdown
+  text
+  multi_card
+  single_card
+  calendar_age
+}
+
+enum FormStatus {
+  draft
+  active
+  archived
+}
+
+enum ResponseStatus {
+  not_started
+  in_progress
+  completed
+  abandoned
+}
+
+enum BlogPostReviewStatus {
+  pending_review
+  approved
+  rejected
+  published
+}
+
+enum InvitationStatus {
+  pending
+  sent
+  opened
+  completed
+}
+
+enum CourseCategory {
+  finance
+  digital_marketing
+  operations
+  legal
+  human_capital
+  sales
+  technology
+}
+
+enum CourseLevel {
+  basic
+  intermediate
+  advanced
+}
+
+enum CourseStatus {
+  draft
+  published
+  archived
+}
+
+enum LessonType {
+  video
+  article
+  quiz
+  assignment
+}
+
+enum Currency {
+  mxn
+  usd
+}
+
+type AdminsContentEditorial {
+  /// Could not determine type: the field only had null or empty values in the sample set.
+  blogPosts  Json?
+  categories AdminsContentEditorialCategories[]
+  settings   AdminsContentEditorialSettings
+}
+
+type AdminsContentEditorialCategories {
+  id        String   @map("_id") @db.ObjectId
+  createdAt DateTime @db.Date
+  icon      String
+  isDefault Boolean
+  label     String
+  slug      String
+  topics    String[]
+}
+
+type AdminsContentEditorialSettings {
+  autoPublish         Boolean
+  defaultFormat       String
+  topicsPerSuggestion Int
+}
+
+type FounderFormsQuestions {
+  createdAt    DateTime                         @db.Date
+  description  String
+  id           String
+  isArchived   Boolean
+  label        String
+  options      FounderFormsQuestionsOptions[]
+  order        Int
+  required     Boolean
+  section      String
+  sectionOrder Int
+  type         QuestionType
+  updatedAt    DateTime                         @db.Date
+  validation   FounderFormsQuestionsValidation?
+}
+
+type FounderFormsQuestionsOptions {
+  label String
+  value String
+}
+
+type FounderFormsQuestionsValidation {
+  allowedFileTypes String[]
+  maxFileSize      Int?
+  maxLength        Int?
+  minLength        Int?
+}
+
+type FounderFormsSettings {
+  allowSaveDraft  Boolean
+  showProgressBar Boolean
+  submitMessage   String
+}
+
+type CourseInstructor {
+  name   String
+  bio    String
+  avatar String?
+}
+
+type CoursePrice {
+  isFree   Boolean
+  amount   Float?
+  currency Currency
+}
+
+type CourseLesson {
+  id          String
+  title       String
+  description String?
+  type        LessonType
+  isExternal  Boolean    @default(false)
+  videoId     String?
+  contentUrl  String?
+  duration    String?
+  order       Int
+}
+
+type CourseModule {
+  id          String
+  title       String
+  description String
+  order       Int
+  lessons     CourseLesson[]
+}
+
+type CourseMetrics {
+  views                 Int
+  enrollments           Int
+  completions           Int
+  completionRate        Float
+  averageRating         Float
+  totalRatings          Int
+  averageTimeToComplete String?
+}
+
+model Course {
+  id            String           @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  category      CourseCategory
+  level         CourseLevel
+  instructor    CourseInstructor
+  entity        String
+  thumbnail     String?
+  duration      String?
+  language      String           @default("es")
+  price         CoursePrice
+  prerequisites String[]
+  tags          String[]
+  modules       CourseModule[]
+  status        CourseStatus     @default(draft)
+  featured      Boolean          @default(false)
+  isNew         Boolean          @default(false)
+  metrics       CourseMetrics?
+  createdAt     DateTime         @default(now()) @db.Date
+  updatedAt     DateTime         @updatedAt @db.Date
+  publishedAt   DateTime?        @db.Date
+
+  @@index([category])
+  @@index([level])
+  @@index([status])
+  @@index([entity])
+  @@index([featured])
+  @@map("courses")
+}
+
+model Video {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  fileName   String
+  thumbnail  String?
+  url        String
+  s3Key      String?
+  size       Int
+  duration   String?
+  uploadedAt DateTime @default(now()) @db.Date
+  updatedAt  DateTime @updatedAt @db.Date
+
+  @@map("videos")
+}
+
+model admins {
+  id               String                 @id @default(auto()) @map("_id") @db.ObjectId
+  contentEditorial AdminsContentEditorial
+  createdAt        DateTime               @db.Date
+  email            String
+  name             String
+  role             String
+  updatedAt        DateTime               @db.Date
+}
+
+model blog_posts {
+  id                 String    @id @map("_id")
+  categoryId         String
+  content            String
+  createdBy          String
+  userId             String?   @db.ObjectId // User ID who created the post
+  format             String?   // Made optional for human content
+  source             String    @default("ai") // Track content origin: "ai" or "human"
+  editorialTeamType  String?   // "person" or "company"
+  authorName         String?   // Name of the person/company
+  authorPosition     String?   // Position/role (for person type)
+  featuredImageKey   String?   // S3 key for the featured image
+  imageMetadata      Json?     // Image metadata (size, type, etc.)
+  status             String    @default("review") // "review", "published", "draft", "archived"
+  generatedAt        DateTime  @db.Date
+  publishedAt        DateTime? @db.Date
+  createdAt          DateTime  @default(now()) @db.Date
+  updatedAt          DateTime  @updatedAt @db.Date
+  slug               String
+  title              String
+  topic              String
+  reviewStatus       BlogPostReviewStatus @default(pending_review)
+
+  @@index([userId])
+  @@index([status])
+  @@index([categoryId])
+  @@index([reviewStatus])
+}
+
+model categories {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @db.Date
+  createdBy String
+  icon      String
+  isDefault Boolean
+  label     String
+  slug      String
+  topics    String[]
+  updatedAt DateTime @db.Date
+}
+
+type FounderFormResponseProgress {
+  totalQuestions    Int
+  answeredQuestions Int
+  percentage        Int
+}
+
+type FounderFormResponseMetadata {
+  startedAt      DateTime  @db.Date
+  lastActivityAt DateTime  @db.Date
+  completedAt    DateTime? @db.Date
+}
+
+type FounderFormResponseAnswer {
+  questionId String
+  value      Json
+}
+
+model FounderFormResponse {
+  id                 String                      @id @default(auto()) @map("_id") @db.ObjectId
+  formId             String                      @db.ObjectId
+  formVersion        Int
+  invitationId       String                      @db.ObjectId
+  founderCompanyName String
+  contactName        String
+  email              String
+  phone              String?
+  status             ResponseStatus              @default(not_started)
+  progress           FounderFormResponseProgress
+  answers            FounderFormResponseAnswer[]
+  metadata           FounderFormResponseMetadata
+  createdAt          DateTime                    @default(now()) @db.Date
+  updatedAt          DateTime                    @updatedAt @db.Date
+
+  @@index([formId])
+  @@index([invitationId])
+  @@index([status])
+  @@map("founder_form_responses")
+}
+
+model FounderForm {
+  id          String                  @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt   DateTime                @db.Date
+  createdBy   String
+  description String
+  name        String
+  questions   FounderFormsQuestions[]
+  settings    FounderFormsSettings
+  slug        String
+  status      FormStatus
+  updatedAt   DateTime                @db.Date
+  version     Int
+
+  @@map("founder_forms")
+}
+
+model FounderInvitation {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  formId           String           @db.ObjectId
+  email            String
+  companyName      String
+  contactName      String
+  phone            String?
+  status           InvitationStatus @default(pending)
+  token            String           @unique
+  responseId       String?          @db.ObjectId
+  emailSent        Boolean          @default(false)
+  emailOpenedCount Int              @default(0)
+  sentAt           DateTime?        @db.Date
+  openedAt         DateTime?        @db.Date
+  completedAt      DateTime?        @db.Date
+  expiresAt        DateTime?        @db.Date
+  sentBy           String?
+  createdAt        DateTime         @default(now()) @db.Date
+  updatedAt        DateTime         @updatedAt @db.Date
+
+  @@index([formId])
+  @@index([email])
+  @@index([status])
+  @@map("founder_invitations")
+}
+
+model User {
+  id          String               @id @default(auto()) @map("_id") @db.ObjectId
+  fullName    String
+  role        UserManagementEnum   @default(partner)
+  email       String               @unique
+  phone       String?
+  companyName String?
+  status      UserManagementStatus @default(active)
+  god         Boolean              @default(false)
+  createdAt   DateTime             @default(now()) @db.Date
+  updatedAt   DateTime             @updatedAt @db.Date
+
+  // Relationship
+  onboarding Onboarding?
+}
+
+model Onboarding {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  user_id             String    @unique @db.ObjectId
+  raw_answers         Json
+  processed           Boolean   @default(false)
+  has_finalized       Boolean   @default(false)
+  generated_offerings Boolean   @default(false)
+  generated_wishlist  Boolean   @default(false)
+  token               String?   @unique
+  expires_at          DateTime? @db.Date
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  // Relationship
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_submissions")
+}
+
+enum UserManagementEnum {
+  admin
+  partner
+  strategic_partner
+}
+
+enum UserManagementStatus {
+  active
+  inactive
+  suspended
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String
+  expires    DateTime @db.Date
+
+  @@index([identifier])
+  @@map("verification_tokens")
+}
